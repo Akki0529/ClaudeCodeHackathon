@@ -60,4 +60,39 @@ This log records decisions made during the refactor session. It is updated as de
 **Why:** The original had a subtle issue: `needs_approval` could also double-count if a row was in the approval band AND the meal band. The refactor uses a single `if/elif/elif` chain so each row lands in exactly one bucket: flagged-high, flagged-meal, or needs-approval.
 **Impact:** Test 6 (`test_needs_approval_band`) confirms count = 5, matching original behaviour.
 
+---
+
+## 2026-09-18 — Production polish pass
+
+### Decision 12 — Added Transaction NamedTuple for structured row data
+**Why:** Plain tuples require callers to know field positions by index. A NamedTuple makes fields self-describing (`tx.employee_id`, `tx.amount`) and is still iterable — fully compatible with Test 7's `list(r)` and `str(r)` checks.
+**Impact:** `flagged` and `needs_approval` now contain `Transaction` objects, not raw tuples.
+
+### Decision 13 — Added ExpenseSummary TypedDict as the return type of summarize()
+**Why:** An untyped `dict` gives IDEs and type checkers nothing to work with. A TypedDict makes keys and value types explicit at zero runtime cost.
+**Impact:** Callers get autocomplete and mypy/pyright can validate key access.
+
+### Decision 14 — Replaced print() warnings with logging.getLogger(__name__)
+**Why:** `print()` goes to stdout unconditionally. A library should let its caller decide what to do with warnings — suppress them, route them to a file, or surface them at a specific log level.
+**Impact:** `logger.warning()` is silent by default when imported as a library; visible when run as a script (basicConfig set in `__main__`).
+
+### Decision 15 — Renamed threshold constants to descriptive names
+**Old:** `THRESH`, `THRESH2`, `APPROVAL_THRESH` | **New:** `MEAL_FLAG_THRESHOLD`, `HIGH_VALUE_THRESHOLD`, `APPROVAL_THRESHOLD`
+**Why:** The original names required reading the surrounding logic to understand what each controlled. The new names are self-explanatory.
+**Impact:** No behaviour change — values are identical. Tests don't import constants.
+
+### Decision 16 — Added pathlib.Path and FileNotFoundError guard in load_transactions()
+**Why:** The default OS error for a missing file is cryptic. A named `FileNotFoundError` with the actual path is actionable.
+**Impact:** `load_transactions()` now converts its argument to `Path` and checks existence before opening.
+
+### Decision 17 — Added module docstring and __all__
+**Why:** A module without a docstring gives importers no surface-level documentation. `__all__` makes the public API explicit — `summarize` is the contract; everything else is internal.
+**Impact:** `from invoice_processor import *` now only exposes `summarize`.
+
+### Verification — 7/7 tests pass after production polish
+```
+pytest test_invoice_processor.py -v → 7 passed in 0.41s
+```
+No tolerance changes, no behaviour changes, no test modifications.
+
 *Update this log with any further decisions before submission.*

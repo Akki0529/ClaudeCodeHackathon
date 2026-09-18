@@ -25,13 +25,16 @@ pytest test_invoice_processor.py::test_meals_not_double_flagged -v  # run Test 7
 
 ## Known issues
 
-**Bug — double-flagging (Test 7, per spec §Scenario A):** The original code appends to `flagged` twice for a high-value Meals row: once because `amt > THRESH2`, and again because `cat == "Meals" and amt > THRESH`. The fix is an `elif` so the meal-threshold branch only runs when the high-value branch did not. Test 7 is the only test that encodes a *fix* rather than preserved behaviour — it only goes green once this bug is corrected.
+**Bug — double-flagging (Test 7, per spec §Scenario A) — FIXED:** The original code appended to `flagged` twice for a high-value Meals row. Fixed with `elif` on the meal-threshold branch — each row now lands in exactly one bucket.
 
-**Code quality issues to address in refactor:**
-- Single-letter variable names throughout (`r`, `x`, `d`, `cnt`, `emp`, `cat`, `amt`, `cur`).
-- Bare `except:` swallows all errors including `KeyboardInterrupt` — replace with specific exceptions (`ValueError`, `IndexError`).
-- Category normalisation is a chain of independent `if` blocks — should be a lookup dict or `match`.
-- No functions — all logic is in one `run()` body.
+**Production-grade additions (all 7 tests still pass):**
+- `Transaction` NamedTuple — flagged/needs_approval rows are named, not anonymous tuples.
+- `ExpenseSummary` TypedDict — return type of `summarize()` is statically checkable.
+- Full type annotations on every function.
+- `logging.getLogger(__name__)` replaces `print()` for warnings — callers control verbosity.
+- `pathlib.Path` for file handling; existence validated with a clear `FileNotFoundError`.
+- Threshold constants renamed: `MEAL_FLAG_THRESHOLD`, `HIGH_VALUE_THRESHOLD`, `APPROVAL_THRESHOLD`.
+- Module docstring, `__all__ = ["summarize"]`, and inline comments explaining the `elif` precedence rule.
 
 ## Do not
 
