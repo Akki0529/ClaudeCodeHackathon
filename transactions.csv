@@ -1,0 +1,81 @@
+date,employee_id,category,description,amount,currency
+2026-03-02,E1042,Travel-Air,Flight LON-FRA,612.40,EUR
+2026-03-02,E1042,Meals,Dinner with client,84.20,EUR
+2026-03-03,E1107,Travel,Hotel Frankfurt 2 nights,420.00,EUR
+2026-03-04,E1042,Travel - Air,Return flight FRA-LON,598.10,EUR
+2026-03-05,E2210,meals,Team lunch,38.50,GBP
+2026-03-05,E2210,Software,Subscription,29.00,USD
+2026-03-06,E1042,T&E,Taxi to office,22.10,EUR
+2026-03-09,E3301,Travel,Train ticket,89.00,GBP
+2026-03-10,E3301,Meals,Lunch alone,14.50,GBP
+2026-03-11,E2210,Office,Stationery,42.00,GBP
+2026-03-12,E1107,client-meal,Client dinner London,310.00,GBP
+2026-03-13,E1042,Travel-Ground,Uber,18.40,EUR
+2026-03-15,E4488,Equipment,Monitor for home office,640.00,USD
+2026-03-16,E4488,Software,Annual license renewal,5800.00,USD
+2026-03-17,E1107,Travel,Hotel Munich,520.00,EUR
+2026-03-18,E1107,Meals,Hotel breakfast,28.50,EUR
+2026-03-18,E2210,Meals,Client lunch,640.00,GBP
+2026-03-19,E3301,Travel,Flight,1240.00,GBP
+2026-03-20,E1042,Meal,Dinner,67.00,EUR
+2026-03-22,E5550,Conference,Registration fee,2900.00,USD
+2026-03-23,E5550,Travel,Conference hotel,1180.00,USD
+2026-03-23,E5550,Meals,Conference welcome dinner,95.00,USD
+2026-03-25,E1107,Software,IDE plugin,49.00,USD
+2026-03-26,E2210,Office,Whiteboard markers,11.00,GBP
+2026-03-27,E3301,Travel,Taxi,38.00,GBP
+2026-03-30,E4488,Equipment,Headset,180.00,USD
+2026-03-30,E1042,T&E,Train Bath-London,78.40,GBP
+2026-04-02,E1107,Travel,Flight LON-NYC,3210.00,USD
+2026-04-03,E1107,Travel,Hotel NYC 4 nights,1980.00,USD
+2026-04-03,E1107,client-meal,Client dinner NYC,720.00,USD
+2026-04-04,E1107,Meals,Lunch with client team,118.00,USD
+2026-04-05,E2210,Office,Printer ink,38.00,GBP
+2026-04-06,E5550,Travel,Conference shuttle,42.00,USD
+2026-04-08,E1042,Software,Productivity app,12.99,USD
+2026-04-09,E3301,Meals,Team dinner Edinburgh,420.00,GBP
+2026-04-10,E1107,Travel,Return flight NYC-LON,2810.00,USD
+2026-04-11,E4488,Equipment,Standing desk converter,380.00,USD
+2026-04-12,E2210,Meal,Quick lunch,9.50,GBP
+2026-04-13,E1042,Travel-Air,Flight LON-AMS,415.00,EUR
+2026-04-14,E1042,Travel,Taxi Amsterdam,28.00,EUR
+2026-04-15,E1042,client-meal,Client dinner Amsterdam,540.00,EUR
+2026-04-16,E1042,Meals,Hotel breakfast,18.00,EUR
+2026-04-17,E5550,Travel,Flight to client site,890.00,USD
+2026-04-18,E3301,Travel,Train,142.00,GBP
+2026-04-20,E1107,Meals,Lunch,32.00,USD
+2026-04-21,E1107,Office,Notebook,8.50,USD
+2026-04-22,E2210,Travel,Flight LHR-EDI,180.00,GBP
+2026-04-23,E2210,Meals,Dinner with team,210.00,GBP
+2026-04-24,E4488,Software,Design tool,1200.00,USD
+2026-04-25,E1042,Travel,Train,68.00,EUR
+2026-04-27,E5550,Conference,Workshop fee,1800.00,USD
+2026-04-28,E1107,Travel,Taxi,42.00,USD
+2026-04-29,E1107,Meals,Coffee with client,18.00,USD
+2026-04-30,E3301,Office,Desk supplies,28.50,GBP
+2026-05-02,E1042,Travel-Air,Flight LON-FRA,580.00,EUR
+2026-05-03,E1042,Meals,Client dinner Frankfurt,712.00,EUR
+2026-05-04,E2210,Travel,Taxi,18.00,GBP
+2026-05-05,E1107,Travel,Hotel Munich 3 nights,860.00,EUR
+2026-05-06,E1107,Meal,Hotel breakfast,22.00,EUR
+2026-05-07,E4488,Equipment,External SSD,240.00,USD
+2026-05-08,E5550,Travel,Conference flight,1140.00,USD
+2026-05-09,E5550,Travel,Hotel,1480.00,USD
+2026-05-10,E5550,Meals,Conference dinner,140.00,USD
+2026-05-11,E3301,Travel,Train,98.00,GBP
+2026-05-12,E2210,Software,Tool subscription,49.00,USD
+2026-05-13,E1042,T&E,Train,42.00,EUR
+2026-05-14,E1107,Travel,Flight,3480.00,USD
+2026-05-15,E1107,Meals,Lunch,28.00,USD
+2026-05-16,E1107,client-meal,Client dinner,580.00,USD
+2026-05-17,E4488,Equipment,Webcam,180.00,USD
+2026-05-18,E2210,Office,Coffee for team,42.00,GBP
+2026-05-19,E5550,Travel,Taxi,38.00,USD
+2026-05-20,E1042,Travel,Hotel,420.00,EUR
+2026-05-21,E1042,Meals,Dinner,68.00,EUR
+2026-05-22,E3301,Travel,Train,118.00,GBP
+2026-05-23,E1107,Travel,Return flight,2890.00,USD
+2026-05-24,E1107,Meals,Lunch,42.00,USD
+2026-05-25,E2210,Office,Printer toner,98.00,GBP
+2026-05-26,E4488,Software,Cloud storage upgrade,360.00,USD
+2026-05-27,E5550,Conference,Late fee,400.00,USD
