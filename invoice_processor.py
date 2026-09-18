@@ -1,146 +1,146 @@
-# invoice_processor.py
-# author: someone, a while ago
-# notes: takes expense csv, applies rules, spits out a summary.
-# don't touch the THRESH constants unless you talk to ops.
-# this works, please don't break it - vk
-
 import csv
 import sys
-import os
 import datetime
 
+# Thresholds — do not change without ops sign-off
 THRESH = 500
 THRESH2 = 5000
 APPROVAL_THRESH = 2500
-PATH = "transactions.csv"
+
+DEFAULT_PATH = "transactions.csv"
+
+CURRENCY_RATES = {
+    "USD": 1.0,
+    "EUR": 1.08,
+    "GBP": 1.26,
+}
+
+CATEGORY_ALIASES = {
+    "Travel-Air": "Travel",
+    "Travel-Ground": "Travel",
+    "Travel - Air": "Travel",
+    "T&E": "Travel",
+    "meals": "Meals",
+    "Meal": "Meals",
+    "client-meal": "Meals",
+}
 
 
-def run(p=PATH):
-    f = open(p, "r")
-    r = csv.reader(f)
-    rows = []
-    cnt = 0
-    for x in r:
-        if cnt == 0:
-            cnt = cnt + 1
-            continue
-        rows.append(x)
-        cnt = cnt + 1
-    f.close()
+def normalize_currency(amount, currency):
+    """Return amount converted to USD, or None for unsupported currencies."""
+    rate = CURRENCY_RATES.get(currency)
+    if rate is None:
+        return None
+    return amount * rate
 
-    # categorise
-    cats = {}
-    flagged = []
-    needs_approval = []
-    total = 0
+
+def normalize_category(category):
+    """Return the canonical category name, collapsing legacy aliases."""
+    return CATEGORY_ALIASES.get(category, category)
+
+
+def load_transactions(path):
+    """Yield parsed rows from the CSV, skipping the header and bad rows."""
+    with open(path, newline="") as f:
+        reader = csv.reader(f)
+        next(reader)  # skip header
+        for row in reader:
+            try:
+                date_str = row[0]
+                employee_id = row[1]
+                category = row[2]
+                description = row[3]
+                amount = float(row[4])
+                currency = row[5]
+            except (ValueError, IndexError):
+                print(f"bad row: {row}")
+                continue
+
+            converted = normalize_currency(amount, currency)
+            if converted is None:
+                print(f"unknown currency {currency}")
+                continue
+
+            yield date_str, employee_id, normalize_category(category), description, converted
+
+
+def summarize(path=DEFAULT_PATH):
+    """
+    Process the expense CSV and return a summary dict with keys:
+        total, by_category, by_employee, by_month, flagged, needs_approval
+    """
+    total = 0.0
+    by_category = {}
     by_employee = {}
     by_month = {}
+    flagged = []
+    needs_approval = []
 
-    for x in rows:
+    for date_str, employee_id, category, description, amount in load_transactions(path):
+        # Accumulate buckets
+        by_category[category] = by_category.get(category, 0.0) + amount
+        by_employee[employee_id] = by_employee.get(employee_id, 0.0) + amount
+
         try:
-            d = x[0]
-            emp = x[1]
-            cat = x[2]
-            desc = x[3]
-            amt = float(x[4])
-            cur = x[5]
-        except:
-            print("bad row: " + str(x))
-            continue
+            month_key = datetime.datetime.strptime(date_str, "%Y-%m-%d").strftime("%Y-%m")
+        except ValueError:
+            month_key = "unknown"
+        by_month[month_key] = by_month.get(month_key, 0.0) + amount
 
-        # currency conversion. we only do USD and EUR rn.
-        if cur == "EUR":
-            amt = amt * 1.08
-        elif cur == "GBP":
-            amt = amt * 1.26
-        elif cur == "USD":
-            amt = amt
-        else:
-            print("unknown currency %s" % cur)
-            continue
+        # Flag high-value rows; only flag meals separately when not already flagged
+        if amount > THRESH2:
+            flagged.append((date_str, employee_id, category, description, amount))
+        elif category == "Meals" and amount > THRESH:
+            flagged.append((date_str, employee_id, category, description, amount))
+        elif APPROVAL_THRESH < amount <= THRESH2:
+            needs_approval.append((date_str, employee_id, category, description, amount))
 
-        # category fixes - some categories changed names last year
-        if cat == "Travel-Air":
-            cat = "Travel"
-        if cat == "Travel-Ground":
-            cat = "Travel"
-        if cat == "Travel - Air":
-            cat = "Travel"
-        if cat == "T&E":
-            cat = "Travel"
-        if cat == "meals":
-            cat = "Meals"
-        if cat == "Meal":
-            cat = "Meals"
-        if cat == "client-meal":
-            cat = "Meals"
+        total += amount
 
-        # bucket
-        if cat in cats:
-            cats[cat] = cats[cat] + amt
-        else:
-            cats[cat] = amt
+    return {
+        "total": total,
+        "by_category": by_category,
+        "by_employee": by_employee,
+        "by_month": by_month,
+        "flagged": flagged,
+        "needs_approval": needs_approval,
+    }
 
-        # employee bucket
-        if emp in by_employee:
-            by_employee[emp] = by_employee[emp] + amt
-        else:
-            by_employee[emp] = amt
 
-        # month bucket
-        try:
-            dt = datetime.datetime.strptime(d, "%Y-%m-%d")
-            mkey = dt.strftime("%Y-%m")
-        except:
-            mkey = "unknown"
-        if mkey in by_month:
-            by_month[mkey] = by_month[mkey] + amt
-        else:
-            by_month[mkey] = amt
+def main(path=DEFAULT_PATH):
+    """Print a human-readable expense summary to stdout."""
+    result = summarize(path)
 
-        # flags
-        if amt > THRESH2:
-            flagged.append((d, emp, cat, desc, amt))
-        if amt > APPROVAL_THRESH and amt <= THRESH2:
-            needs_approval.append((d, emp, cat, desc, amt))
-        if cat == "Meals" and amt > THRESH:
-            flagged.append((d, emp, cat, desc, amt))
-
-        total = total + amt
-
-    # output
     print("==== EXPENSE SUMMARY ====")
-    print("total: %s" % total)
-    print("")
-    print("by category:")
-    for k in cats:
-        print("  %s: %s" % (k, cats[k]))
-    print("")
-    print("by employee (top 5):")
-    sorted_emp = sorted(by_employee.items(), key=lambda x: x[1], reverse=True)
-    i = 0
-    for k, v in sorted_emp:
-        if i < 5:
-            print("  %s: %s" % (k, v))
-            i = i + 1
-    print("")
-    print("by month:")
-    for k in sorted(by_month.keys()):
-        print("  %s: %s" % (k, by_month[k]))
-    print("")
-    print("FLAGGED (over %s or meals over %s): %d" % (THRESH2, THRESH, len(flagged)))
-    for x in flagged:
-        print("  " + str(x))
-    print("")
-    print("NEEDS APPROVAL (over %s, under %s): %d" % (APPROVAL_THRESH, THRESH2, len(needs_approval)))
-    for x in needs_approval:
-        print("  " + str(x))
+    print(f"total: {result['total']}")
+    print()
 
-    return total
+    print("by category:")
+    for category, total in result["by_category"].items():
+        print(f"  {category}: {total}")
+    print()
+
+    print("by employee (top 5):")
+    top_employees = sorted(result["by_employee"].items(), key=lambda item: item[1], reverse=True)
+    for employee_id, total in top_employees[:5]:
+        print(f"  {employee_id}: {total}")
+    print()
+
+    print("by month:")
+    for month_key in sorted(result["by_month"]):
+        print(f"  {month_key}: {result['by_month'][month_key]}")
+    print()
+
+    print(f"FLAGGED (over {THRESH2} or meals over {THRESH}): {len(result['flagged'])}")
+    for row in result["flagged"]:
+        print(f"  {row}")
+    print()
+
+    print(f"NEEDS APPROVAL (over {APPROVAL_THRESH}, under {THRESH2}): {len(result['needs_approval'])}")
+    for row in result["needs_approval"]:
+        print(f"  {row}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        run(sys.argv[1])
-    else:
-        run()
+    path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PATH
+    main(path)

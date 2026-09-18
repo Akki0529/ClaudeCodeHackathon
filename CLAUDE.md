@@ -2,56 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## What it does
 
-```bash
-# Run tests
-pip install pytest
-pytest test_invoice_processor.py -v
+Reads `transactions.csv` (columns: date, employee_id, category, description, amount, currency), applies Deloitte expense-policy rules, and produces a structured summary. The legacy `run()` entrypoint prints results to stdout. The refactored module must additionally expose a `summarize(path) -> dict` function — the regression suite (`test_invoice_processor.py`) calls that function directly to verify behaviour is preserved.
 
-# Run a single test
-pytest test_invoice_processor.py::test_total_is_preserved -v
+**Business rules that must not change (per spec §Scenario A):**
+- Thresholds: `THRESH = 500` (meal flag), `THRESH2 = 5000` (high-value flag), `APPROVAL_THRESH = 2500` (approval band). Do not alter without ops sign-off.
+- Currency conversion: USD × 1.0, EUR × 1.08, GBP × 1.26. Unknown currencies are skipped silently.
+- Category aliases collapse to canonical names: `Travel-Air / Travel-Ground / Travel - Air / T&E → Travel`; `meals / Meal / client-meal → Meals`.
 
-# Run the processor directly
-python invoice_processor.py                   # uses transactions.csv
-python invoice_processor.py other_file.csv   # custom path
+## Entry point
+
+```
+python invoice_processor.py                  # reads transactions.csv
+python invoice_processor.py <path>           # custom path
+pytest test_invoice_processor.py -v          # run all 7 regression tests
+pytest test_invoice_processor.py::test_meals_not_double_flagged -v  # run Test 7 alone
 ```
 
-## Project overview
+`summarize(path="transactions.csv") -> dict` — the public API the tests call. Return keys:
+`total` (float), `by_category` (dict), `by_employee` (dict), `by_month` (dict, keys `"YYYY-MM"`), `flagged` (list), `needs_approval` (list).
 
-This is a Python expense-processing exercise. The original `invoice_processor.py` reads `transactions.csv`, applies business rules, and prints a summary. The task is to **refactor it** so it exposes a `summarize(path="transactions.csv") -> dict` function (while keeping the CLI entrypoint working), so that `test_invoice_processor.py` can test it programmatically.
+## Known issues
 
-## Refactoring contract
+**Bug — double-flagging (Test 7, per spec §Scenario A):** The original code appends to `flagged` twice for a high-value Meals row: once because `amt > THRESH2`, and again because `cat == "Meals" and amt > THRESH`. The fix is an `elif` so the meal-threshold branch only runs when the high-value branch did not. Test 7 is the only test that encodes a *fix* rather than preserved behaviour — it only goes green once this bug is corrected.
 
-The refactored module must expose:
+**Code quality issues to address in refactor:**
+- Single-letter variable names throughout (`r`, `x`, `d`, `cnt`, `emp`, `cat`, `amt`, `cur`).
+- Bare `except:` swallows all errors including `KeyboardInterrupt` — replace with specific exceptions (`ValueError`, `IndexError`).
+- Category normalisation is a chain of independent `if` blocks — should be a lookup dict or `match`.
+- No functions — all logic is in one `run()` body.
 
-```python
-summarize(path="transactions.csv") -> dict
-```
+## Do not
 
-Return keys: `total` (float), `by_category` (dict), `by_employee` (dict), `by_month` (dict, keys as `"YYYY-MM"`), `flagged` (list), `needs_approval` (list).
+- Change threshold constants without explicit ops approval (per spec §Scenario A note on THRESH).
+- Add performance optimisations (async, generators, numpy) — the spec explicitly excludes these.
+- Produce a wholesale rewrite that alters observable output on `transactions.csv` — the regression suite is the proof of preserved behaviour.
+- Remove the CLI `__main__` entrypoint — it must still work after the refactor.
+- Use `pytest.approx` tolerances wider than those in the test file — do not relax the tests to pass the code.
 
-## Business rules (preserve exactly)
+## Next step
 
-**Thresholds** — do not change without consulting ops:
-- `THRESH = 500` — meal amount that triggers a flag
-- `THRESH2 = 5000` — any category amount that triggers a flag
-- `APPROVAL_THRESH = 2500` — lower bound for the needs-approval band (over 2500, under 5000)
-
-**Currency conversion rates:**
-- USD: × 1.0
-- EUR: × 1.08
-- GBP: × 1.26
-- Any other currency: skip the row (don't crash)
-
-**Category normalisation** (aliases → canonical):
-- `Travel-Air`, `Travel-Ground`, `Travel - Air`, `T&E` → `Travel`
-- `meals`, `Meal`, `client-meal` → `Meals`
-
-## Known bug to fix (Test 7)
-
-The original code double-flags a meal that also exceeds `THRESH2`: it first appends to `flagged` because `amt > THRESH2`, then appends again because `cat == "Meals" and amt > THRESH`. Fix: use `elif` so that a row flagged by the high threshold is not also flagged by the meal threshold. Test 7 encodes this fix — it passes only after the bug is corrected.
-
-## CSV format
-
-`transactions.csv` columns (header row present): `date`, `employee_id`, `category`, `description`, `amount`, `currency`.
+All 7 regression tests must pass, including Test 7 (double-flag bug fix). Run `pytest test_invoice_processor.py -v` after each change to confirm nothing regressed. Once green, tighten the direction log and submit.
